@@ -224,7 +224,7 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 	// İstek gövdesini oku ve ToDoItem ID'sini ve list ID'sini al
 	var reqBody struct {
 		ID     uint `json:"id"`
-		ListID uint `json:"list_id"`
+		ListID uint `json:"ListID"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -263,8 +263,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	// İstek gövdesini oku ve ToDoItem bilgilerini al
 	var reqBody struct {
-		ListID uint   `json:"list_id"`
-		Task   string `json:"task"`
+		ListID uint   `json:"ListID"`
+		Task   string `json:"Task"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -287,4 +287,132 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 	// Başarı durumunda oluşturulan ToDoItem'i JSON olarak döndür
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(item)
+}
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	username, err := ParseToken(tokenString)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, ok := users[username]
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var reqBody struct {
+		ID uint `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = todoService.DeleteTask(user.UserID, reqBody.ID, user.Type)
+	if err != nil {
+		if err.Error() == "task not found" {
+			w.WriteHeader(http.StatusNotFound)
+		} else if err.Error() == "unauthorized" {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+func CompleteTask(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	username, err := ParseToken(tokenString)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, ok := users[username]
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// İstek gövdesini oku ve ToDoItem ID'sini al
+	var reqBody struct {
+		ID uint `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Görevi tamamla
+	err = todoService.CompleteTask(user.UserID, reqBody.ID, user.Type)
+	if err != nil {
+		if err.Error() == "task not found" {
+			w.WriteHeader(http.StatusNotFound)
+		} else if err.Error() == "unauthorized" {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+func UpdateTask(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	username, err := ParseToken(tokenString)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, ok := users[username]
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// İstek gövdesini oku ve ToDoItem bilgilerini al
+	var reqBody struct {
+		ID   uint   `json:"id"`
+		Task string `json:"task"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Görevi güncelle
+	err = todoService.UpdateTask(user.UserID, reqBody.ID, reqBody.Task, user.Type)
+	if err != nil {
+		if err.Error() == "task not found" {
+			w.WriteHeader(http.StatusNotFound)
+		} else if err.Error() == "unauthorized" {
+			w.WriteHeader(http.StatusForbidden)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

@@ -151,13 +151,11 @@ func (s *ToDoService) CreateTask(userID, listID uint, task string, userType int)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Listeyi kontrol et
 	list, ok := s.lists[listID]
 	if !ok {
 		return nil, errors.New("list not found")
 	}
 
-	// Kullanıcı yetkisi kontrol et
 	if userID != list.UserID && userType != 2 {
 		return nil, errors.New("unauthorized")
 	}
@@ -176,4 +174,83 @@ func (s *ToDoService) CreateTask(userID, listID uint, task string, userType int)
 	s.items[item.ID] = item
 
 	return item, nil
+}
+func (s *ToDoService) DeleteTask(userID, taskID uint, userType int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	task, ok := s.items[taskID]
+	if !ok {
+		return errors.New("task not found")
+	}
+
+	if userID != task.UserID && userType != 2 {
+		return errors.New("unauthorized")
+	}
+
+	task.Deleted = true
+	task.DeletedAt = time.Now()
+
+	return nil
+}
+func (s *ToDoService) CompleteTask(userID, taskID uint, userType int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	task, ok := s.items[taskID]
+	if !ok {
+		return errors.New("task not found")
+	}
+
+	if userID != task.UserID && userType != 2 {
+		return errors.New("unauthorized")
+	}
+
+	task.Completed = true
+	task.UpdatedAt = time.Now()
+
+	list, ok := s.lists[task.ListID]
+	if ok {
+		list.CompletePercent = s.calculateCompletePercent(list.ID)
+	}
+
+	return nil
+}
+
+func (s *ToDoService) calculateCompletePercent(listID uint) int {
+	totalItems := 0
+	completedItems := 0
+
+	for _, item := range s.items {
+		if item.ListID == listID {
+			totalItems++
+			if item.Completed {
+				completedItems++
+			}
+		}
+	}
+
+	if totalItems == 0 {
+		return 0
+	}
+
+	return (completedItems*100)/totalItems - 1
+}
+func (s *ToDoService) UpdateTask(userID, taskID uint, task string, userType int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	taskItem, ok := s.items[taskID]
+	if !ok {
+		return errors.New("task not found")
+	}
+
+	if userID != taskItem.UserID && userType != 2 {
+		return errors.New("unauthorized")
+	}
+
+	taskItem.Task = task
+	taskItem.UpdatedAt = time.Now()
+
+	return nil
 }

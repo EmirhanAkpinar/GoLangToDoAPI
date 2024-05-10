@@ -23,8 +23,8 @@ func main() {
 	// Task routes
 	router.HandleFunc("/task", controllers.GetItems).Methods("GET")
 	router.HandleFunc("/task/create", controllers.CreateTask).Methods("POST")
-	//router.HandleFunc("/task/delete", controllers.DeleteTask).Methods("POST")
-	//router.HandleFunc("/task/complete", controllers.CompleteTask).Methods("POST")
-
+	router.HandleFunc("/task/delete", controllers.DeleteTask).Methods("POST")
+	router.HandleFunc("/task/complete", controllers.CompleteTask).Methods("POST")
+	router.HandleFunc("/task/update", controllers.UpdateTask).Methods("POST")
 	http.ListenAndServe(":8000", router)
 }
