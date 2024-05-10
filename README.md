@@ -22,4 +22,4 @@ Uygulamayı çalıştırın:
 
 
 ## API Kullanımı
-[Postman API DOCS]https://documenter.getpostman.com/view/18749239/2sA3JM7Meu
+[Postman API DOCS](https://documenter.getpostman.com/view/18749239/2sA3JM7Meu)
